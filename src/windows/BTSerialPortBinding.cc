@@ -36,6 +36,7 @@ void BTSerialPortBinding::EIO_Connect(uv_work_t *req) {
     if (baton->rfcomm->s != SOCKET_ERROR) {
         SOCKADDR_BTH bluetoothSocketAddress = { 0 };
         int bluetoothSocketAddressSize = sizeof(SOCKADDR_BTH);
+
         int stringToAddressError = WSAStringToAddress(baton->address,
                                                       AF_BTH,
                                                       nullptr,
@@ -183,7 +184,7 @@ void BTSerialPortBinding::EIO_AfterRead(uv_work_t *req) {
         argv[1] = Nan::Undefined();
     } else {
         Local<Object> globalObj = Nan::GetCurrentContext()->Global();
-        Local<Function> bufferConstructor = Local<Function>::Cast(globalObj->Get(Nan::New("Buffer").ToLocalChecked()));
+        Local<Function> bufferConstructor = Local<Function>::Cast(Nan::Get(globalObj, Nan::New("Buffer").ToLocalChecked()).ToLocalChecked());
         Local<Value> constructorArgs[1] = { Nan::New<v8::Integer>(baton->size) };
         Local<Object> resultBuffer = Nan::NewInstance(bufferConstructor, 1, constructorArgs).ToLocalChecked();
 
@@ -216,9 +217,9 @@ void BTSerialPortBinding::Init(Local<Object> target) {
     Nan::SetPrototypeMethod(t, "write", Write);
     Nan::SetPrototypeMethod(t, "read", Read);
     Nan::SetPrototypeMethod(t, "close", Close);
-    target->Set(Nan::New("BTSerialPortBinding").ToLocalChecked(), t->GetFunction());
-    target->Set(Nan::New("BTSerialPortBinding").ToLocalChecked(), t->GetFunction());
-    target->Set(Nan::New("BTSerialPortBinding").ToLocalChecked(), t->GetFunction());
+    Nan::Set(target, Nan::New("BTSerialPortBinding").ToLocalChecked(), t->GetFunction(Nan::GetCurrentContext()).ToLocalChecked());
+    Nan::Set(target, Nan::New("BTSerialPortBinding").ToLocalChecked(), t->GetFunction(Nan::GetCurrentContext()).ToLocalChecked());
+    Nan::Set(target, Nan::New("BTSerialPortBinding").ToLocalChecked(), t->GetFunction(Nan::GetCurrentContext()).ToLocalChecked());
 }
 
 BTSerialPortBinding::BTSerialPortBinding() : s(INVALID_SOCKET) {
@@ -239,8 +240,8 @@ NAN_METHOD(BTSerialPortBinding::New) {
         Nan::ThrowError("usage: BTSerialPortBinding(address, channelID, callback, error)");
     }
 
-    String::Utf8Value address(info[0]);
-    int channelID = info[1]->Int32Value();
+    Nan::Utf8String address(info[0]);
+    int channelID = info[1]->Int32Value(Nan::GetCurrentContext()).ToChecked();
     if (channelID <= 0) {
         Nan::ThrowTypeError("ChannelID should be a positive int value");
     }
